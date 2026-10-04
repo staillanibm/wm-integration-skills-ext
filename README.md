@@ -1,5 +1,11 @@
 # IBM webMethods Integration skills extension
 
+> [!WARNING]
+> **Use this extension only on development environments.** Never point it at an Integration Server
+> used in production: the AI assistant creates packages, deploys and deletes services, and reloads
+> packages on the server it is given. Ideally, work with an Integration Server running locally, whose
+> `packages/` directory the assistant can reach.
+
 IBM publishes AI skills for webMethods Integration Server under the name
 **webMethods Integration Flow Pilot**. This repository extends them.
 

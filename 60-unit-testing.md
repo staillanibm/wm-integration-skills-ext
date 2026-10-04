@@ -23,13 +23,13 @@ the answer. Never generate them unasked.
 1. **Determine expected values by invoking the service**, not by predicting them. Run the service once
    with each happy-path input, read the actual output, and use those values as expectations. For error
    cases, run the service with the bad input and copy the exact message from `$error` in the response.
-2. **If any output field contains XML, HTML, or any string with `<` characters — use `record: true`
-   exclusively.** Never write a `*-result.xml` file by hand for such a field: the `IDataXMLCoder` reader
-   will parse the unescaped content as XML structure and the comparison will fail with tags stripped.
-   `record: true` stores the value in the correct native binary format.
-3. **Verify every recording** — read the `recordings` section of `test_suite_create`'s response. A
-   recorded `exception` you did not expect means the recording failed; fix the input before keeping it
-   as the expectation.
+2. **If any output field contains XML, HTML, or any string with `<` characters, record the expected
+   result from a real invocation** (snapshot) instead of writing it. Never write a `*-result.xml` file
+   by hand for such a field: the `IDataXMLCoder` reader will parse the unescaped content as XML
+   structure and the comparison will fail with tags stripped. A recording stores the value in the
+   correct native format.
+3. **Verify every recording.** A recorded `exception` you did not expect means the recording failed;
+   fix the input before keeping it as the expectation.
 
 ## Corrections to the supplement
 
@@ -54,10 +54,9 @@ the answer. Never generate them unasked.
 10. **Determine expected values by invoking the service once** when its real output (failure message
     wording, which fields survive in the pipeline) is not obvious. Do not predict them.
 
-## Tooling
+## Operations needed
 
-With `wm-mcp-server` (scope `unit-test`): `package_reload` (mandatory before every run), `test_run`,
-`test_check_status`, `test_text_report`, `test_junit_report`, and `mock_*` for mocking. The scope
-deliberately has no namespace mutation, so copying suite files onto the server is done outside MCP
-(filesystem copy for a local IS). If the files must be written by the server itself, the paths must first
-be whitelisted — see the reference file.
+Use whatever tools are available in your context to: copy the suite files onto the server (filesystem
+copy for a local IS), reload the package (mandatory before every run), run the suite, check its status,
+read its text or JUnit report, and mock services when needed. If the files must be written by the
+server itself, the paths must first be whitelisted — see the reference file.

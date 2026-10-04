@@ -2,7 +2,7 @@
 
 Applies to Step 5 (construction) and Step 6 (output). Complements
 `50-nested-documents-and-silent-failures.md`. All rules below were observed on Integration Server 12.1
-and fail **silently**; they are only visible after `package_reload` (see
+and fail **silently**; they are only visible after a package reload (see
 `40-deployment-and-test-loop.md`).
 
 ## 1. Prepare INVOKE inputs in a MAP, then INVOKE without mapping

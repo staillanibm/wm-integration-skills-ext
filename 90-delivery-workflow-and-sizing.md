@@ -13,7 +13,7 @@ service. Complements `10-package-and-output-layout.md` and `30-factorisation.md`
 3. **Document type**, if the output is XML that must be schema-ordered (below).
 4. **Services, one at a time**, bottom-up (helpers first): write, deploy, reload, test
    (`40-deployment-and-test-loop.md`). Probe any unfamiliar `pub.*` service by invoking it
-   (`service_invoke`) before building on it: signatures, parameter names and error messages are not
+   before building on it: signatures, parameter names and error messages are not
    always what the documentation says.
 5. **Unit test suites** per service, then end to end (`60-unit-testing.md`, `85-unit-testing-addenda.md`).
 6. **Replayable recipe** and a short README with the layout, the design choices and the traps met.

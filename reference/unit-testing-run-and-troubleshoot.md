@@ -3,9 +3,8 @@
 Reference file, read on demand from `60-unit-testing.md`. Verified against a live Integration Server
 12.1. Where it disagrees with `supplements/unit-testing-guide.md`, this file wins.
 
-These steps describe *what* must happen on the server, not *which* tool does it — use whatever the
-environment provides (Designer, IS Administrator, a deployment pipeline, a management API, or the
-`wm-mcp-server` `unit-test` scope). The sequence does not change.
+These steps describe *what* must happen on the server, not *which* tool does it — use whatever tools
+are available in your context. The sequence does not change.
 
 ---
 

@@ -10,7 +10,7 @@ three verified failure modes, none of which produce an error.
 ## Why it matters
 
 FSL assembles whole records; it never mutates fields. Writing it the other way fails **silently**: the
-compiler discards the statement, `dsl_validate` still returns SUCCESS, deployment succeeds and the
+compiler discards the statement, FSL validation still succeeds, deployment succeeds and the
 service runs without error — it just does not do what the FSL says.
 
 ## The rules, in short
@@ -29,7 +29,7 @@ service runs without error — it just does not do what the FSL says.
    `DocXxx` and remap at serialisation.
 8. **Element order in generated XML comes from a document type, not from the FSL.** To emit
    schema-valid XML, set `documentTypeName` for `pub.xml:documentToXMLString`. The document type must
-   exist on the server; see the sibling `document-type` skill.
+   exist on the server; see "Generating XML in document order" in `90-delivery-workflow-and-sizing.md`.
 
 ## Detecting a silent loss
 
@@ -40,5 +40,5 @@ grep -o '<MAPCOPY FROM="[^"]*" TO="[^"]*"' <IS>/packages/<pkg>/ns/<interface pat
 ```
 
 A `copy` in your FSL with no matching `MAPCOPY` line was dropped. Path suffix `;2;0` = single record,
-`;2;1` = list. `node_get` exposes none of this. When the service builds nested documents and the
+`;2;1` = list. The node metadata returned by the server exposes none of this. When the service builds nested documents and the
 Integration Server package folder is reachable locally, do this check before reporting success.

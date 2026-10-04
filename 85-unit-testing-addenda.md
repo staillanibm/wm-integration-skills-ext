@@ -1,11 +1,10 @@
 # Unit testing: addenda from practice
 
-Complements `60-unit-testing.md` (which wins over the supplement). Read that file first. When the
-MCP tool `test_suite_create` is used, the layout it writes differs from the one described there: it
-writes `resources/test/setup/<suite>.xml` and `resources/test/data/<suite>/<case>_input.xml`
-(`_expected.xml`), with file names relative to the package root. Local mirror: keep
-`resources/test/` at the package root, beside `sources/` and the namespace folder, so it can be copied
-onto the server unchanged.
+Complements `60-unit-testing.md` (which wins over the supplement). Read that file first. Some test
+tooling writes a layout different from the one described there: `resources/test/setup/<suite>.xml`
+and `resources/test/data/<suite>/<case>_input.xml` (`_expected.xml`), with file names relative to the
+package root. In that case, keep `resources/test/` at the package root of the local mirror, beside
+`sources/` and the namespace folder, so it can be copied onto the server unchanged.
 
 ## Test the persisted version
 
@@ -16,13 +15,13 @@ reload and red after is the normal symptom of a service whose persisted node los
 
 | Output | Use |
 |---|---|
-| flat values, few fields | `expected` (subset match) |
-| values in lists / nested records | `expected_fields` with JXPath: `/taxes[1]/rate`, `count(/taxes)` (1-based indexes) |
-| a record whose keys contain `:` | a snapshot (`record: true`), never JXPath: the colon is read as a namespace prefix |
-| an exception | `expected_exception` with a stable substring of the message |
-| a large generated document (XML) | an `expected` file holding the exact string |
+| flat values, few fields | expected values (subset match) |
+| values in lists / nested records | field assertions with JXPath: `/taxes[1]/rate`, `count(/taxes)` (1-based indexes) |
+| a record whose keys contain `:` | a recorded snapshot, never JXPath: the colon is read as a namespace prefix |
+| an exception | an expected exception with a stable substring of the message |
+| a large generated document (XML) | an expected file holding the exact string |
 
-`expected` is a **subset** match: extra variables in the actual pipeline are ignored, so leaked
+Expected values are a **subset** match: extra variables in the actual pipeline are ignored, so leaked
 variables do not fail a test. Test leaks separately if they matter (see below).
 
 ## Pipeline Hygiene Testing Pattern (MANDATORY for nominal cases)
@@ -30,34 +29,28 @@ variables do not fail a test. Test leaks separately if they matter (see below).
 Since `<expected>` is a subset match, a service leaving unwanted temporary variables, intermediate records, or technical invoke parameters (`inString`, `jsonString`, `pattern`, `num1`, `num2`, etc.) in the pipeline will still pass unit tests silently.
 
 To guarantee and enforce pipeline hygiene:
-1. In the primary nominal/happy-path test case, include explicit `expected_fields` assertions verifying that all temporary and input variables are `$null` / absent.
-2. An assertion with operator `"=="` and no value (`null`) checks that the JXPath node evaluates to nothing / `null`.
+1. In the primary nominal/happy-path test case, include explicit field assertions (JXPath) verifying that all temporary and input variables are `$null` / absent.
+2. An equality assertion against `null` checks that the JXPath node evaluates to nothing.
 
-**Example payload for `test_suite_create`:**
-```json
-{
-  "name": "testNominalWithPipelineHygiene",
-  "service": "myPackage.services:myService",
-  "input": { "inputParam": "value" },
-  "expected_fields": [
-    { "path": "/expectedOutput", "operator": "!=", "value": "" },
-    { "path": "/inputParam", "operator": "==", "value": null },
-    { "path": "/tempRecord", "operator": "==", "value": null },
-    { "path": "/inString", "operator": "==", "value": null },
-    { "path": "/jsonString", "operator": "==", "value": null }
-  ]
-}
-```
+Example, for a service with input `inputParam` and output `expectedOutput`:
 
-## `record: true` is a trap when an input is itself JSON or XML
+| JXPath | Assertion |
+|---|---|
+| `/expectedOutput` | not empty |
+| `/inputParam` | `null` (absent) |
+| `/tempRecord` | `null` (absent) |
+| `/inString` | `null` (absent) |
+| `/jsonString` | `null` (absent) |
+
+## Recording the expectation is a trap when an input is itself JSON or XML
 
 The recording invokes the service through a different channel than the runner. With an input string
 that looks like JSON it produced an exception instead of the result, which was then recorded as the
 expectation. Rules:
 
-- read the `recordings` part of the response of `test_suite_create` every time: a recorded
-  `exception` you did not expect is a bug in the recording, not an expectation;
-- for inputs that are serialised documents, create the case with a placeholder `expected`, then write
+- read the recorded result every time: a recorded `exception` you did not expect is a bug in the
+  recording, not an expectation;
+- for inputs that are serialised documents, create the case with a placeholder expectation, then write
   the `_expected.xml` file yourself from a real call that you **verified** (for XML output: against the
   reference document, element by element);
 - a snapshot freezes what the service does today, bugs included: verify it before keeping it.

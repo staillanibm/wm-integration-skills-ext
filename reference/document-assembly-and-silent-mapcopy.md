@@ -74,15 +74,15 @@ set documentTypeName = "myPackage.docTypes:MyDocType";
 on the Integration Server; FSL cannot create one. Generating it from a representative XML sample is the
 quickest route (`wm.server.record:generateFromXMLString`) — **keep the XML declaration** (without it the
 parser rejects the sample as not well-formed) and **remove the default namespace** (otherwise the root
-element is typed `prefix0:Root` and will not match the record you serialise). See the sibling
-`document-type` skill.
+element is typed `prefix0:Root` and will not match the record you serialise). See also "Generating XML
+in document order" in `90-delivery-workflow-and-sizing.md`.
 
 ---
 
 ## ACTIVE — Silent MAPCOPY loss: three pipeline behaviours that fail without any error
 
 - **Status**: Open. Three distinct cases where a `copy` statement is **discarded at compile time**.
-  `dsl_validate` returns SUCCESS, deployment succeeds, the service runs and returns no error — it simply
+  FSL validation succeeds, deployment succeeds, the service runs and returns no error — it simply
   does not do what the FSL says.
 - **Category**: Transpiler problem (statements silently dropped).
 - **How to detect**: the generated node on disk is the only source of truth. Read
@@ -92,7 +92,7 @@ element is typed `prefix0:Root` and will not match the record you serialise). Se
   ```
   A `copy` from your FSL with no matching `MAPCOPY` line was rejected. The path suffix `;2;0` vs `;2;1`
   also reveals how the compiler typed each variable — `0` is a single record, `1` is a list.
-  `node_get` exposes none of this.
+  The node metadata returned by the server exposes none of this.
 
 ### Case A — `set` on a path inside a record writes nothing
 

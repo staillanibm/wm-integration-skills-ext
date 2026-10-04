@@ -27,7 +27,7 @@ Every flow service that is not the main service and that the main service (or an
 
 - `utils` sits directly under `services/`, so that it is shared by every main service of the package and the
   reuse check below has a single place to look.
-- Create the `utils` folder on the Integration Server (`folder_create`, parent first) and in the local mirror
+- Create the `utils` folder on the Integration Server (parent first) and in the local mirror
   before generating the first utility service. Do not create other sub-folders for utility services.
 - The interface declaration and the on-disk path must match segment for segment, as in
   `10-package-and-output-layout.md`.
@@ -43,14 +43,14 @@ what is new.
 Where to look, in this order:
 
 1. **The target package's `utils` folder**, locally (`{packageName}/{rootDir}/services/utils/`) and on the
-   server (`node_list` on `{rootDir}.services.utils`). The server is the source of truth: the two may differ.
-2. **The `utils` folders of the other packages** on the server (`package_list`, then `node_list` on each
+   server (list the content of `{rootDir}.services.utils`). The server is the source of truth: the two may differ.
+2. **The `utils` folders of the other packages** on the server (list the packages, then the content of each
    package's `utils` folder), when step 1 found nothing suitable.
 
 How to decide that a service can be reused:
 
-- Read its signature and its documentation (`comment:` in `properties`, or `node_get` / `fsl_extract` when only
-  the server copy exists). Match on **behaviour**, not on the name.
+- Read its signature and its documentation (`comment:` in `properties`, or read it from the server, as metadata or
+  as FSL, when only the server copy exists). Match on **behaviour**, not on the name.
 - Reuse it only if its inputs and outputs fit without adapting the existing service and without bending the
   caller's logic. A near match is not a match: do not modify an existing utility service to make it fit,
   and do not copy it under another name.

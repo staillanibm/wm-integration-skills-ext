@@ -8,9 +8,9 @@ has been tested **after a package reload**.
 
 ## Why
 
-On Integration Server 12.1, the node that `fsl_deploy` leaves **in memory** can differ from the node
-that is **persisted** to `flow.xml`. Both the deployment and the first invocations succeed; the
-difference only appears after `package_reload` (or a server restart). Observed differences, none of
+On Integration Server 12.1, when FSL is deployed through the server's API, the node left **in memory**
+can differ from the node that is **persisted** to `flow.xml`. Both the deployment and the first
+invocations succeed; the difference only appears after a package reload (or a server restart). Observed differences, none of
 which raises an error:
 
 - a `copy` silently absent from the compiled flow;
@@ -22,63 +22,60 @@ which raises an error:
 When the Integration Server packages directory is reachable from the workspace (local IS), deploy by
 **copying the local `flow.flow` to `<IS>/packages/<package>/ns/<interface path>/<service>/flow.flow`
 and reloading the package**. The server recompiles the service from that file and rewrites `node.ndf`,
-`flow.xml` and `.fsl.digest`. Compared with `fsl_deploy`:
+`flow.xml` and `.fsl.digest`. Compared with deploying through the API:
 
-- the **signature is kept** (`fsl_deploy` persists an empty `sig_in`/`sig_out`: after a reload the
+- the **signature is kept** (API deployment persists an empty `sig_in`/`sig_out`: after a reload the
   service still runs but has no declared input/output; patching `node.ndf` does not help, the reload
   rewrites it);
-- an existing service is **overwritten**, with no `node_delete` and no warning step needed: the file that
+- an existing service is **overwritten**, with no prior deletion and no warning step needed: the file that
   runs is the file in the workspace;
 - a new service only needs its folder with the single `flow.flow`;
-- the file that runs is not a copy pasted into a tool call (no drift, and no multi-thousand-token echo
-  per deployment).
+- the file that runs is not a copy of the source pasted into a request (no drift, and no
+  multi-thousand-token echo per deployment).
 
-## Fallback: `fsl_deploy`, when the packages directory is not reachable
+## Fallback: API deployment, when the packages directory is not reachable
 
 Use it only then (remote server, no filesystem access), and accept that the signature must be restored
 another way (Designer); say so in the report.
 
-`fsl_deploy` is **create-only**: deploying a service whose node already exists fails outright, whatever
-its own description claims. Before deploying, check whether a node exists at the target interface path
-and service name (`node_get`):
+API deployment is **create-only**: deploying a service whose node already exists fails outright. Before
+deploying, check on the server whether a node exists at the target interface path and service name:
 
 - **Not present** → deploy directly.
 - **Present** → warn the user that the deployed service will be overwritten and that any change made
   directly on the server (e.g. in Designer) since the last deployment from this source will be lost.
-  Then delete the existing node (`node_delete`) and redeploy from the current `.flow` source. The warning
+  Then delete the existing node and redeploy from the current `.flow` source. The warning
   is informational, not blocking, unless the user's own instructions for the task say otherwise.
 
 ## The loop (for every service, every time it changes)
 
-1. Deploy: copy the `flow.flow` into the package folder (preferred), or the `fsl_deploy` fallback above
-   (`dsl_validate` first, then `fsl_deploy`).
-2. `package_reload`.
+1. Deploy: copy the `flow.flow` into the package folder (preferred), or the API fallback above
+   (validate the FSL against the server first, then deploy).
+2. Reload the package.
 3. Check that the service really compiled, then check the persisted node (below).
 4. Run the service or its test suite. Only now read the result.
 
 Never batch several services before reloading and testing: a defect in one hides behind another.
 
-## Tooling
+## Operations needed
 
-The procedure does not depend on the tool. When the `wm-mcp-server` MCP server is connected (scopes
-`fsl-develop` and `unit-test`), the operations map to:
+Use whatever tools are available in your context to perform these operations on the Integration Server:
 
-| Operation | MCP tool |
-|---|---|
-| Copy the `.flow` into the package | filesystem copy (not an MCP tool) |
-| Validate FSL without writing | `dsl_validate` |
-| Check whether a node exists | `node_get` / `node_list` |
-| Delete an existing node (fallback only) | `node_delete` |
-| Deploy FSL (fallback only) | `fsl_deploy` |
-| Read a deployed service back as FSL | `fsl_extract` |
-| Create a missing folder / package | `folder_create` / `package_create` |
-| Reload a package | `package_reload` |
-| Invoke a service | `service_invoke` |
+- copy a `.flow` file into the package directory (filesystem);
+- validate FSL against the server without deploying it;
+- check whether a node exists, and read its metadata;
+- delete an existing node (fallback only);
+- deploy FSL (fallback only);
+- read a deployed service back as FSL;
+- create a missing folder or package;
+- reload a package;
+- invoke a service.
 
+If one of them is not available, say which one and ask the user how to proceed.
 
 ## Check the persisted node
 
-- `package_reload` can answer "reloaded" even when a service did not compile: see
+- A package reload can report success even when a service did not compile: see
   `95-fsl-platform-pitfalls.md` §1 (check that `flow.xml` and `node.ndf` exist next to the `flow.flow`,
   read `server.log`).
 - Check the signature fields in `node.ndf` against the FSL.
@@ -104,22 +101,22 @@ nor deployment report.
 
 ## Things that look like bugs and are not
 
-- A service deployed with `fsl_deploy` has an **empty signature** in `node_get`, `fsl_extract` and
-  `node.ndf` after a reload, and `service x ( )` in the server's `flow.flow`. It still runs (the
+- A service deployed through the API has an **empty signature** in its node metadata, in its FSL
+  extraction and in `node.ndf` after a reload, and `service x ( )` in the server's `flow.flow`. It still runs (the
   pipeline is dynamic) but exposes no declared interface: a defect of that deployment path, avoided by
   copying the `.flow` file. Check `node.ndf` for `field_name` entries after every deployment.
-- `fsl_extract` returns a semantically equivalent text, not the source: do not diff it against the
+- Reading a deployed service back as FSL returns a semantically equivalent text, not the source: do not diff it against the
   `.flow` file.
 
 ## Cost of a deployment
 
-`fsl_deploy` echoes the whole source and the whole compiled signature: several thousand tokens per call,
-doubled by the text you have to send. Keep each service small, deploy once per change, and debug with
+API deployment sends the whole source and typically returns the whole compiled signature: several
+thousand tokens per deployment. Keep each service small, deploy once per change, and debug with
 small probe services (`zzProbe`, deleted afterwards) rather than by redeploying the real one.
 
 ## Diagnosing without a debugger
 
-- `service_invoke` returns the **whole pipeline** at the end of the service, including leaked variables:
+- Invoking a service returns the **whole pipeline** at the end of the service, including leaked variables:
   this is the cheapest way to see what a step left behind.
 - To see the pipeline at the point of a failure, wrap the body of a probe copy in
   `TRY { ... } CATCH { MAP { set failed = "yes"; } }`: the variables written before the failure stay

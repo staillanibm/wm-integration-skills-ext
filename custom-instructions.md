@@ -25,10 +25,10 @@ What your instructions can and cannot do:
 
 ### Workspace-first rule — MANDATORY, NO EXCEPTIONS
 
-**All source files (`.flow`, `.java`, or any other artifact) MUST be written to the workspace first using `write_file` or `apply_diff`, then copied to the IS packages directory using `execute_command`.**
+**All source files (`.flow`, `.java`, or any other artifact) MUST be written to the workspace first with your file-editing tools, then copied to the IS packages directory.**
 
 - ✅ Write to workspace → copy to IS
-- ❌ NEVER write directly to the IS packages directory with `execute_command` heredocs or `cat >`
+- ❌ NEVER write directly to the IS packages directory (for example with shell heredocs or `cat >`)
 
 The workspace is the source of truth. The IS packages directory is the deployment target.
 
